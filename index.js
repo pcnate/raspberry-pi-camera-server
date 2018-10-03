@@ -23,38 +23,16 @@ app.get('/', function( req, res ) {
   res.sendFile("www/index.html", { root: __dirname });
 });
 
-var cam1, cam2, cam3, cam4;
+var images = {};
 
-app.get('/cam1.jpg', ( request, response ) => {
-  console.log('cam1' );
+app.get('/images/:deviceID', ( request, response ) => {
   response.writeHead(200, { 'Content-Type': 'image/jpeg' });
-  response.write( cam1 || '' );
+  response.write( images[request.params.deviceID] || '' );
   response.end();  
 })
 
-app.get('/cam2.jpg', ( request, response ) => {
-  console.log('cam2' );
-  response.writeHead(200, { 'Content-Type': 'image/jpeg' });
-  response.write( cam2 || '' );
-  response.end();  
-})
+app.post('/upload/:deviceID', multipartMiddleware, async ( request, response ) => {
 
-app.get('/cam3.jpg', ( request, response ) => {
-  console.log('cam3' );
-  response.writeHead(200, { 'Content-Type': 'image/jpeg' });
-  response.write( cam3 || '' );
-  response.end();  
-})
-
-app.get('/cam4.jpg', ( request, response ) => {
-  console.log('cam4' );
-  response.writeHead(200, { 'Content-Type': 'image/jpeg' });
-  response.write( cam4 || '' );
-  response.end();  
-})
-
-app.post('/upload', multipartMiddleware, async ( request, response ) => {
-  console.log('upload', request.query, request.connection.remoteAddress );
   await fs.readFile( request.files.filedata.path, ( error, data ) => {
 
     if( error ) {
@@ -63,12 +41,10 @@ app.post('/upload', multipartMiddleware, async ( request, response ) => {
     } else {
 
       // if ( request.connection.remoteAddress === '::ffff:128.10.100.71' ) {
-      cam1 = data;
-      cam2 = data;
-      cam3 = data;
-      cam4 = data;
+      images[request.params.deviceID] = data;
+
       response.send();
-      serverEmitter.emit('imageRefresh');
+      serverEmitter.emit('imageRefresh', request.params.deviceID );
     }
 
   });
@@ -86,8 +62,8 @@ io.on('connection', function( socket ) {
     console.log('user disconnected');
   })
 
-  serverEmitter.on("imageRefresh", function () {
-    console.log('telling client to load new image');
-    socket.emit("imageRefresh");
+  serverEmitter.on("imageRefresh", deviceID => {
+    console.log('telling client to load', deviceID );
+    socket.emit("imageRefresh", deviceID );
   })
 })
