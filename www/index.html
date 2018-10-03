@@ -15,10 +15,8 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.3/css/bootstrap.min.css" integrity="sha384-MIwDKRSSImVFAZCVLtU0LMDdON6KVCrZHyVQQj6e8wIEJkW4tvwqXrbMIya1vriY" crossorigin="anonymous">
   </head>
   <body>
-    <img id="cam1" src="/cam1/current.jpg" class="img-fluid"/>
-    <!-- <img id="cam2" src="/cam2/current.jpg" class="img-fluid"/> -->
-    <img id="cam3" src="/cam3/current.jpg" class="img-fluid"/>
-    <!-- <img id="cam4" src="/cam4/current.jpg" class="img-fluid"/> -->
+    
+    <div id="images"></div>
 
     <script src="socket.io/socket.io.js"></script>
     <!-- jQuery first, then Tether, then Bootstrap JS. -->
@@ -31,12 +29,14 @@
         'path': window.location.pathname + 'socket.io'
       });
 
-      socket.on('imageRefresh', data => {
-        console.log( 'imageRefresh', data );
-        $("#cam1").attr("src", "/cam1/current.jpg?" + ( new Date().getTime() ) );
-        // $("#cam2").attr("src", "/cam2/current.jpg?" + ( new Date().getTime() ) );
-        $("#cam3").attr("src", "/cam3/current.jpg?" + ( new Date().getTime() ) );
-        // $("#cam4").attr("src", "/cam4/current.jpg?" + ( new Date().getTime() ) );
+      socket.on('imageRefresh', deviceID => {
+
+        if( $("#"+deviceID).length === 0 ) {
+          $("#images").append( $("<img>").attr('id', deviceID).attr('src', 'images/'+deviceID).addClass('img-fluid') )
+        } else {
+          $("#"+deviceID).attr('src', 'images/' + deviceID + '?' + ( new Date().getTime() ) );
+        }
+
       })
     </script>
   </body>
