@@ -29,12 +29,12 @@
         'path': window.location.pathname + 'socket.io'
       });
 
-      socket.on('imageRefresh', deviceID => {
+      socket.on('imageRefresh', imageInformation => {
 
-        if( $("#"+deviceID).length === 0 ) {
-          $("#images").append( $("<img>").attr('id', deviceID).attr('src', 'images/'+deviceID).addClass('img-fluid') )
+        if( $("#"+imageInformation.deviceID).length === 0 ) {
+          $("#images").append( $("<img>").attr('id', imageInformation.deviceID).attr('src', 'images/'+imageInformation.deviceID).addClass('img-fluid') )
         } else {
-          $("#"+deviceID).attr('src', 'images/' + deviceID + '?' + ( new Date().getTime() ) );
+          $("#"+imageInformation.deviceID).attr('src', 'images/' + imageInformation.deviceID + '?' + ( new Date().getTime() ) );
         }
 
       })

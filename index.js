@@ -14,11 +14,6 @@ app.enable( 'trust proxy' );
 class ServerEmitter extends EventEmmitter { }
 const serverEmitter = new ServerEmitter();
 
-
-io.on('connection', function(socket){
-  console.log('a user connected');
-});
-
 app.get('/', function( req, res ) {
   res.sendFile("www/index.html", { root: __dirname });
 });
@@ -40,11 +35,28 @@ app.post('/upload/:deviceID', multipartMiddleware, async ( request, response ) =
       response.status( 500 ).send();
     } else {
 
-      // if ( request.connection.remoteAddress === '::ffff:128.10.100.71' ) {
       images[request.params.deviceID] = data;
 
       response.send();
-      serverEmitter.emit('imageRefresh', request.params.deviceID );
+      serverEmitter.emit('imageRefresh', { deviceID: request.params.deviceID, timestamp: 0 });
+    }
+
+  });
+});
+
+app.post('/upload/:deviceID/:timestamp', multipartMiddleware, async ( request, response ) => {
+
+  await fs.readFile( request.files.filedata.path, ( error, data ) => {
+
+    if( error ) {
+      console.error( 'error uploading image', error );
+      response.status( 500 ).send();
+    } else {
+
+      images[request.params.deviceID] = data;
+
+      response.send();
+      serverEmitter.emit('imageRefresh', { deviceID: request.params.deviceID, timestamp: request.params.timestamp });
     }
 
   });
@@ -54,16 +66,29 @@ http.listen( 3000, function() {
   console.log( 'listening on port 3000' );
 })
 
-io.on('connection', function( socket ) {
-  console.log('connection');
-  socket.emit('test');
+var clientID = 0;
 
+io.on('connection', socket => {
+  let vm = {};
+  vm.clientID = clientID;
+  clientID++;
+
+  console.log('a user connected ', vm.clientID );
+  
+  vm.tellClient = image => {
+    console.log( vm.clientID, image.deviceID, image.timestamp );
+    socket.emit("imageRefresh", image );
+  }
+
+  Object.keys( images ).forEach( deviceID => {
+    socket.emit("imageRefresh", { deviceID, timestamp: 0 });
+  })
+
+  serverEmitter.on("imageRefresh", vm.tellClient )
+  
   socket.on('disconnect', function() {
+    serverEmitter.removeListener("imageRefresh", vm.tellClient )
     console.log('user disconnected');
   })
 
-  serverEmitter.on("imageRefresh", deviceID => {
-    console.log('telling client to load', deviceID );
-    socket.emit("imageRefresh", deviceID );
-  })
-})
+});
