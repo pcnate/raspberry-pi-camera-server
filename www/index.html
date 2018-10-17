@@ -13,10 +13,23 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.3/css/bootstrap.min.css" integrity="sha384-MIwDKRSSImVFAZCVLtU0LMDdON6KVCrZHyVQQj6e8wIEJkW4tvwqXrbMIya1vriY" crossorigin="anonymous">
+
+    <style>
+      #images > img {
+        padding-left: 0px;
+        padding-right: 0px;
+      }
+
+      body {
+        background-color: black;
+      }
+    </style>
   </head>
   <body>
-    
-    <div id="images"></div>
+
+    <div class="container-fluid">
+      <div id="images" class="row"></div>
+    </div>
 
     <script src="socket.io/socket.io.js"></script>
     <!-- jQuery first, then Tether, then Bootstrap JS. -->
@@ -25,19 +38,57 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.3/js/bootstrap.min.js" integrity="sha384-ux8v3A6CPtOTqOzMKiuo3d/DomGaaClxFYdCu2HPMBEkf6x2xiDyJ7gkXU0MWwaD" crossorigin="anonymous"></script>
 
     <script>
+
+      var images = {};
+
       var socket = io.connect({
         'path': window.location.pathname + 'socket.io'
       });
 
+      function maximizeImage( imageId ) {
+
+        let imageIdStr = "#" + imageId;
+
+        let alreadyEnlarged = $( imageIdStr ).hasClass('col-md-12');
+
+        $( "#images img" ).each( function ( i, element ) {
+          $( element ).removeClass( 'col-md-12' ).addClass( 'col-md-6' )
+        } );
+
+        if( !alreadyEnlarged ) {
+          localStorage.setItem( 'enlargedImage', imageId );
+          $( imageIdStr ).removeClass( 'col-md-6' ).addClass( 'col-md-12' ).remove().insertBefore( $("#images img:first" ) );
+        } else {
+          localStorage.removeItem( 'enlargedImage' ); 
+        }
+
+      }
+
+      $("#images").on( 'click', 'img', function() {
+        let imageId = $( this ).attr( 'id' );
+        if( imageId ) {
+          maximizeImage( imageId );
+        }
+      })
+
       socket.on('imageRefresh', imageInformation => {
 
         if( $("#"+imageInformation.deviceID).length === 0 ) {
-          $("#images").append( $("<img>").attr('id', imageInformation.deviceID).attr('src', 'images/'+imageInformation.deviceID).addClass('img-fluid') )
-        } else {
-          $("#"+imageInformation.deviceID).attr('src', 'images/' + imageInformation.deviceID + '?' + ( new Date().getTime() ) );
+          images[ imageInformation.deviceID ] = {
+            loading: false,
+            timestamp: imageInformation.timestamp
+          }
+          $("#images").append( $("<img>").attr('id', imageInformation.deviceID).addClass('img-fluid').addClass('col-xs-12').addClass('col-md-6') )
+          if ( localStorage.getItem( 'enlargedImage' ) === imageInformation.deviceID ) {
+            maximizeImage( imageInformation.deviceID );
+          }
         }
 
+        images[ imageInformation.deviceID ].timestamp = imageInformation.timestamp;
+        $("#"+imageInformation.deviceID).attr('src', 'images/' + imageInformation.deviceID + '?timestamp=' + imageInformation.timestamp );
+
       })
+
     </script>
   </body>
 </html>
