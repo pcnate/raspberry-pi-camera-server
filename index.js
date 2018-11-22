@@ -48,6 +48,9 @@ app.post('/upload/:deviceID', multipartMiddleware, async ( request, response ) =
     }
 
   });
+
+  await fs.unlink( request.files.filedata.path, async ( error, data ) => {} );
+
 });
 
 app.post('/upload/:deviceID/:timestamp', multipartMiddleware, async ( request, response ) => {
@@ -82,8 +85,10 @@ app.post('/upload/:deviceID/:timestamp', multipartMiddleware, async ( request, r
       })
 
     }
-
   });
+
+  await fs.unlink( request.files.filedata.path, async ( error, data ) => {} );
+
 });
 
 async function checkDirectoryStructure( ...dirs ) {
